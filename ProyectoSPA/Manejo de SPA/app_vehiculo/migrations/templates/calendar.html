@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Interactivo</title>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.7/main.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.7/main.min.js"></script>
+</head>
+<body>
+    <div id="calendar"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var calendarEl = document.getElementById('calendar');
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                editable: true,
+                events: '/app_vehiculo/api/events/',
+                dateClick: function (info) {
+                    var title = prompt("Ingrese el título del evento:");
+                    if (title) {
+                        fetch('/app_vehiculo/api/events/add/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+                            body: JSON.stringify({ title: title, start: info.dateStr })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert("Evento agregado!");
+                                calendar.refetchEvents();
+                            } else {
+                                alert("Error al agregar evento.");
+                            }
+                        });
+                    }
+                },
+                eventClick: function (info) {
+                    var newTitle = prompt("Editar el título del evento:", info.event.title);
+                    if (newTitle) {
+                        fetch('/app_vehiculo/api/events/edit/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+                            body: JSON.stringify({ id: info.event.id, title: newTitle })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert("Evento actualizado!");
+                                calendar.refetchEvents();
+                            } else {
+                                alert("Error al actualizar evento.");
+                            }
+                        });
+                    }
+                }
+            });
+
+            calendar.render();
+
+            function getCSRFToken() {
+                let name = 'csrftoken';
+                let cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    let cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        return cookie.substring(name.length + 1);
+                    }
+                }
+                return '';
+            }
+        });
+    </script>
+</body>
+</html>
